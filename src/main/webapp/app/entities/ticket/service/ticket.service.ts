@@ -65,19 +65,6 @@ export class TicketService {
       .pipe(map(res => this.convertResponseArrayFromServer(res)));
   }
 
-  protected convertDateArrayFromServer(restTickets: RestTicket[] | null): ITicket[] {
-    if (!restTickets) {
-      return []; // Return an empty array if restTickets is null
-    }
-
-    return restTickets.map(restTicket => {
-      return {
-        ...restTicket,
-        dueDate: restTicket.dueDate ? dayjs(restTicket.dueDate) : undefined,
-      };
-    });
-  }
-
   delete(id: number): Observable<HttpResponse<{}>> {
     return this.http.delete(`${this.resourceUrl}/${id}`, { observe: 'response' });
   }
@@ -115,26 +102,6 @@ export class TicketService {
       ...ticket,
       dueDate: ticket.dueDate?.format(DATE_FORMAT) ?? null,
     };
-  }
-
-  queryMyTickets(): Observable<HttpResponse<ITicket[]>> {
-    const options = createRequestOption();
-    return this.http.get<RestTicket[]>(this.resourceUrl + '/self', { params: options, observe: 'response' }).pipe(
-      map((res: HttpResponse<RestTicket[]>) => {
-        const restTickets = res.body || [];
-        const convertedTickets = restTickets.map(restTicket => ({
-          ...restTicket,
-          dueDate: restTicket.dueDate ? dayjs(restTicket.dueDate) : null,
-        }));
-        return new HttpResponse<ITicket[]>({
-          body: convertedTickets,
-          headers: res.headers,
-          status: res.status,
-          statusText: res.statusText,
-          url: res.url || '',
-        });
-      })
-    );
   }
 
   protected convertDateFromServer(restTicket: RestTicket): ITicket {
