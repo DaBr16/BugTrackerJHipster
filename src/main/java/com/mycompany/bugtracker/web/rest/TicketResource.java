@@ -2,6 +2,7 @@ package com.mycompany.bugtracker.web.rest;
 
 import com.mycompany.bugtracker.domain.Ticket;
 import com.mycompany.bugtracker.repository.TicketRepository;
+import com.mycompany.bugtracker.security.AuthoritiesConstants;
 import com.mycompany.bugtracker.web.rest.errors.BadRequestAlertException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -14,10 +15,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -171,7 +174,7 @@ public class TicketResource {
         if (eagerload) {
             page = ticketRepository.findAllWithEagerRelationships(pageable);
         } else {
-            page = ticketRepository.findAll(pageable);
+            page = ticketRepository.findAllByOrderByDueDateAsc(pageable);
         }
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
@@ -190,6 +193,22 @@ public class TicketResource {
         return ResponseUtil.wrapOrNotFound(ticket);
     }
 
+    @GetMapping("/tickets/self")
+    public ResponseEntity<List<Ticket>> getAllSelfTickets(
+        Pageable pageable,
+        @RequestParam(required = false, defaultValue = "false") boolean eagerload
+    ) {
+        log.debug("REST request to get a page of user's Tickets");
+        Page<Ticket> page;
+        if (eagerload) {
+            page = ticketRepository.findAllWithEagerRelationships(pageable);
+        } else {
+            page = new PageImpl<>(ticketRepository.findByAssignedToIsCurrentUser());
+        }
+        HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
+        return ResponseEntity.ok().headers(headers).body(page.getContent());
+    }
+
     /**
      * {@code DELETE  /tickets/:id} : delete the "id" ticket.
      *
@@ -197,6 +216,7 @@ public class TicketResource {
      * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
      */
     @DeleteMapping("/tickets/{id}")
+    @Secured(AuthoritiesConstants.ADMIN)
     public ResponseEntity<Void> deleteTicket(@PathVariable Long id) {
         log.debug("REST request to delete Ticket : {}", id);
         ticketRepository.deleteById(id);

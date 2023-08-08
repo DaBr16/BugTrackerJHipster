@@ -32,6 +32,8 @@ public interface TicketRepository extends TicketRepositoryWithBagRelationships, 
         return this.fetchBagRelationships(this.findAllWithToOneRelationships(pageable));
     }
 
+    Page<Ticket> findAllByOrderByDueDateAsc(Pageable pageable);
+
     @Query(
         value = "select distinct ticket from Ticket ticket left join fetch ticket.project left join fetch ticket.assignedTo",
         countQuery = "select count(distinct ticket) from Ticket ticket"

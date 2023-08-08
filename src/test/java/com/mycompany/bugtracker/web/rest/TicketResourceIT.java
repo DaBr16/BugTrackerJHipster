@@ -423,6 +423,7 @@ class TicketResourceIT {
 
     @Test
     @Transactional
+    @WithMockUser(roles = { "USER", "ADMIN" })
     void deleteTicket() throws Exception {
         // Initialize the database
         ticketRepository.saveAndFlush(ticket);
